@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: EASU
   m_Shader: {fileID: 4800000, guid: d29544680e3370847bc993283affc103, type: 3}
-  m_ShaderKeywords: JULIA_ON MAX_SAMPLES
+  m_ShaderKeywords: JULIA_ON MAX_SAMPLES SURFACE_HIGH SURFACE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -79,6 +79,6 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - iChannel0Resolution: {r: 2048, g: 767, b: 0, a: 0}
-    - iResolution: {r: 2560, g: 959, b: 0, a: 0}
+    - iChannel0Resolution: {r: 2560, g: 959, b: 0, a: 0}
+    - iResolution: {r: 2560, g: 1440, b: 0, a: 0}
   m_BuildTextureStacks: []

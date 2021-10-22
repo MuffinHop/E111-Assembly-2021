@@ -68,35 +68,29 @@ public class DrawToRenderTexture : MonoBehaviour
     private static readonly int BulbPosition = Shader.PropertyToID("bulbPosition");
     private static readonly int BackgroundLight = Shader.PropertyToID("backgroundLight");
     private static readonly int ScatterLightColor = Shader.PropertyToID("scatterLightColor");
-    [SerializeField] private CustomRenderTexture _rTex;
+    //[SerializeField] private CustomRenderTexture _rTex;
     [SerializeField] private Material _material;
     [SerializeField] public AudioSource _audioSource;
     [SerializeField] private DeviceController _deviceController;
     [SerializeField] private bool fullRes;
-    [SerializeField] private DrawToRenderTexture _drawToRenderTexture;
+    //[SerializeField] private DrawToRenderTexture _drawToRenderTexture;
     [SerializeField] private float _BPM;
     [SerializeField] private Texture2D _skybox;
     private int rpb = 8; /* rows per beat */
     private float row_rate;
-    [SerializeField] private MeshRenderer _meshRenderer;
+    //[SerializeField] private MeshRenderer _meshRenderer;
     private bool deviceProp = false;
     private float pauseCooldown;
     private float prevFrameRow;
     public static float ROWI;
     [SerializeField] private ShaderVariantCollection _collection;
     [SerializeField] private MeshRenderer _loading;
-    private int screenWidth;
-    private int screenHeight;
+    //private int screenWidth;
+    //private int screenHeight;
     private List<RenderHistory> renderHistories = new List<RenderHistory>();
     private String GPU_name;
     void Start()
     {
-        GPU_name = SystemInfo.graphicsDeviceName;
-            screenWidth = Screen.width;
-            screenHeight = Screen.height;
-        Debug.LogWarning(screenWidth);
-        Debug.LogWarning(screenHeight);
-        Debug.LogWarning(GPU_name);
         row_rate = (float) ((_BPM / 60.0) * rpb);
         Cursor.visible = false;
     }
@@ -105,54 +99,7 @@ public class DrawToRenderTexture : MonoBehaviour
     void Setup()
     {
 
-        if( _rTex != null )
-        {
-            _rTex.DiscardContents(true, true);
-            _rTex.Release();
-            _rTex = null;
-        }
-
-        if (!_deviceController.RecordVideo)
-        {
-            if (fullRes)
-            {
-                _rTex = new CustomRenderTexture(screenWidth, (int)(screenHeight * 0.666f), RenderTextureFormat.ARGBHalf);
-            }
-            else
-            {
-                _rTex = new CustomRenderTexture((int)(screenWidth * 0.8f), (int)(screenHeight * 0.8f * 0.666f),
-                    RenderTextureFormat.ARGBHalf);
-            }
-        }
-        else
-        {
-            if (fullRes)
-            {
-                _rTex = new CustomRenderTexture(screenWidth, (int)(screenHeight * 0.666f), RenderTextureFormat.ARGBHalf);
-            }
-            else
-            {
-                _rTex = new CustomRenderTexture((int)(screenWidth), (int)(screenHeight* 0.666f),
-                    RenderTextureFormat.ARGBHalf);
-            }
-        }
-
-        _rTex.depth = 0;
-        _rTex.filterMode = FilterMode.Bilinear;
-        _rTex.format = RenderTextureFormat.ARGBHalf;
-        _rTex.material = _material;
-        _rTex.updateMode = CustomRenderTextureUpdateMode.Realtime;
-        _rTex.initializationMode = CustomRenderTextureUpdateMode.Realtime;
- 
-        if( !_rTex.IsCreated() )
-            _rTex.Create();
-        _rTex.Initialize();
-        _rTex.updateMode = CustomRenderTextureUpdateMode.Realtime;
-        _rTex.initializationMode = CustomRenderTextureUpdateMode.Realtime;
-        _rTex.initializationSource = CustomRenderTextureInitializationSource.Material;
-        _rTex.initializationMaterial = _material;
-        _rTex.material = _material;
-        if (!_meshRenderer && _deviceController != null)
+        if (_deviceController != null)
         {
             if (!_deviceController.Device.player)
                 _audioSource.Pause();
@@ -264,7 +211,6 @@ public class DrawToRenderTexture : MonoBehaviour
             }
         }
 
-        _rTex.material = _material;
         if (!deviceProp && _deviceController != null)
         {
             _deviceController.Device.Pause += Paused;
@@ -274,27 +220,11 @@ public class DrawToRenderTexture : MonoBehaviour
         float row = (_audioSource.time + 1f/60f) * row_rate;
         ROWI = row;
         
-        if (_drawToRenderTexture == null && _rTex != null)
-        {
-            _material.SetTexture(IChannel0, _rTex);
-            _material.SetVector(IChannel0Resolution,new Vector4(_rTex.width,_rTex.height,0f,0f));
-        }
-        else if(_drawToRenderTexture.GetRT() != null)
-        {
-            var texture = _drawToRenderTexture.GetRT();
-            _material.SetTexture(IChannel0, texture);
-            _material.SetVector(IChannel0Resolution, new Vector4(texture.width, texture.height, 0f, 0f));
-        }
 
         _material.SetInt(IFrame,Time.frameCount);
         _material.SetFloat(IDeltaTime,Time.deltaTime);
         if (prevFrameRow != row || (Time.frameCount%20) == 0)
         {
-            _material.SetVector("iResolution", new Vector4(
-                _rTex.width, _rTex.height,
-                0f,
-                0f
-            ));
             if (_deviceController == null) return;
             _material.SetVector(CameraPosition, new Vector4(
                 _deviceController.Device.GetTrack("CameraPositionX").GetValue(row),
@@ -562,11 +492,6 @@ public class DrawToRenderTexture : MonoBehaviour
         {
             Application.Quit();
         }
-        if (_meshRenderer != null)
-        {
-            _meshRenderer.material.mainTexture = _rTex;
-        }
-        _rTex.Update();
     }
 
     void OnApplicationQuit()
@@ -576,10 +501,6 @@ public class DrawToRenderTexture : MonoBehaviour
             Debug.Log(history);
         }
         _deviceController.Device.SaveTracks();
-    }
-    public CustomRenderTexture GetRT()
-    {
-        return _rTex;
     }
     private void SetRow(int row)
     {

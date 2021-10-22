@@ -132,11 +132,6 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1841509506707766781, guid: 8864143be0fde18408bbe544d4321f0e,
         type: 3}
-      propertyPath: _mainCamera
-      value: 
-      objectReference: {fileID: 963194227}
-    - target: {fileID: 1841509506707766781, guid: 8864143be0fde18408bbe544d4321f0e,
-        type: 3}
       propertyPath: _audioSource
       value: 
       objectReference: {fileID: 239796441}
@@ -814,16 +809,16 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3d42dff5282ca614b82312c53cfb4092, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _pass_A: {fileID: 2100000, guid: fadc5bd80f4956143be371a6ec97a1c5, type: 2}
-  _pass_B: {fileID: 0}
-  _pass_C: {fileID: 0}
-  _pass_D: {fileID: 0}
-  _pass_FXAA: {fileID: 0}
+  _pass_B: {fileID: 2100000, guid: 95c19c7fddd8e2447bb2a821bc999845, type: 2}
+  _pass_C: {fileID: 2100000, guid: b7a4a96d71adf1a46b3a26bb73367699, type: 2}
+  _pass_D: {fileID: 2100000, guid: ef3bfe5fe3cec7649a837cd086c177c4, type: 2}
+  _pass_FXAA: {fileID: 2100000, guid: d4eb6e7b741e12340822872267bee0f4, type: 2}
 --- !u!850595691 &1191645805
 LightingSettings:
   m_ObjectHideFlags: 0

@@ -589,7 +589,7 @@ float getDistance( in vec3 position, out Material material) {
 
 	void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	{
-		if(mod(fragCoord.x/8.0+fragCoord.x/8.0,2.0) == 0) discard;
+		//if(mod(fragCoord.x/8.0+fragCoord.x/8.0,2.0) == 0) discard;
 		vec2 aspect = vec2(iResolution.x/iResolution.y, 1.0);
 		vec2 uv = fragCoord.xy / iResolution.xy;
 		uv = (2.0 * uv - 1.0) * aspect;

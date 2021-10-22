@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Path Marcher
   m_Shader: {fileID: 4800000, guid: 0d464760426f47643a00c125e1b7d6e2, type: 3}
-  m_ShaderKeywords: JULIA_ON MAX_SAMPLES
+  m_ShaderKeywords: JULIA_ON MAX_SAMPLES SURFACE_HIGH SURFACE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -25,19 +25,19 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _DistanceNear: 5
-    - iFrame: 725
-    - iTime: 16.207521
+    - iFrame: 1198
+    - iTime: 36.385666
     - iTimeDelta: 0.015
     m_Colors:
     - _ColorFar: {r: 0.3, g: 0.3, b: 0.3, a: 1}
     - _ColorNear: {r: 0, g: 1, b: 0, a: 1}
     - _Point: {r: 0, g: 0, b: 0, a: 1}
-    - cameraPosition: {r: 0, g: 0, b: -15, a: 0}
-    - cameraRotation: {r: 0, g: 0, b: 0, a: 0}
-    - iResolution: {r: 2048, g: 767, b: 0, a: 0}
-    - lightColor: {r: 8.183554, g: 2.7285175, b: 0.001, a: 0}
-    - lightDirection: {r: 0, g: 1.497038, b: -0.7639439, a: 0}
-    - prevCameraPosition: {r: 0, g: 0, b: -15, a: 0}
-    - prevCameraRotation: {r: 0, g: 0, b: 0, a: 0}
-    - rotationPhase: {r: 0.17305811, g: 0, b: 0, a: 0}
+    - cameraPosition: {r: 0.50239646, g: 0, b: -5.498477, a: 0}
+    - cameraRotation: {r: 0, g: -0.025119824, b: 0, a: 0}
+    - iResolution: {r: 2560, g: 959, b: 0, a: 0}
+    - lightColor: {r: 1.9668263, g: 1.4839132, b: 1.001, a: 0}
+    - lightDirection: {r: 0, g: 0.9658263, b: 0.4487394, a: 0}
+    - prevCameraPosition: {r: 0.5305625, g: 0, b: -5.5079093, a: 0}
+    - prevCameraRotation: {r: 0, g: -0.026528126, b: 0, a: 0}
+    - rotationPhase: {r: 5.2, g: 0.2, b: 0, a: 0}
   m_BuildTextureStacks: []
