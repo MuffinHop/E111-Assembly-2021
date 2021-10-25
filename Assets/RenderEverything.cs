@@ -1,6 +1,8 @@
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class RenderEverything : MonoBehaviour
 {
@@ -15,6 +17,7 @@ public class RenderEverything : MonoBehaviour
     [SerializeField] private Material _pass_D;
     [SerializeField] private Material _pass_FXAA;
     [SerializeField] private CustomRenderTexture _rt_A, _rt_B, _rt_C, _rt_D;
+    [SerializeField] private DeviceController _deviceController;
     private int screenWidth;
     private int screenHeight;
 
@@ -36,8 +39,9 @@ public class RenderEverything : MonoBehaviour
     {
         screenWidth = Screen.width;
         screenHeight = Screen.height;
-        _rt_A = new CustomRenderTexture(screenWidth, (int)(screenHeight * 0.666f), RenderTextureFormat.ARGBHalf);
-        _rt_B = new CustomRenderTexture(screenWidth, screenHeight, RenderTextureFormat.ARGBHalf);
+        
+        _rt_A = new CustomRenderTexture((int)(screenWidth*0.8f), (int)((int)(screenHeight * 0.666f)*0.8f), RenderTextureFormat.ARGBHalf);
+        _rt_B = new CustomRenderTexture((int)(screenWidth*0.8f), (int)((int)(screenHeight)*0.8f), RenderTextureFormat.ARGBHalf);
         _rt_C = new CustomRenderTexture(screenWidth, screenHeight, RenderTextureFormat.ARGBHalf);
         _rt_D = new CustomRenderTexture(screenWidth, screenHeight, RenderTextureFormat.ARGBHalf);
         InitCRT(_rt_A);
@@ -45,7 +49,6 @@ public class RenderEverything : MonoBehaviour
         InitCRT(_rt_C);
         InitCRT(_rt_D);
     }
-
     void OnRenderImage(RenderTexture source, RenderTexture destination){
         // A
         _pass_A.SetTexture(IChannel0, _rt_A);

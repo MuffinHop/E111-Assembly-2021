@@ -79,6 +79,6 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - iChannel0Resolution: {r: 2560, g: 959, b: 0, a: 0}
-    - iResolution: {r: 2560, g: 1440, b: 0, a: 0}
+    - iChannel0Resolution: {r: 811, g: 415, b: 0, a: 0}
+    - iResolution: {r: 1014, g: 519, b: 0, a: 0}
   m_BuildTextureStacks: []

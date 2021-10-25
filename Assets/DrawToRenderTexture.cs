@@ -85,6 +85,8 @@ public class DrawToRenderTexture : MonoBehaviour
     public static float ROWI;
     [SerializeField] private ShaderVariantCollection _collection;
     [SerializeField] private MeshRenderer _loading;
+
+    [SerializeField] private Texture2D _visy;
     //private int screenWidth;
     //private int screenHeight;
     private List<RenderHistory> renderHistories = new List<RenderHistory>();
@@ -92,13 +94,14 @@ public class DrawToRenderTexture : MonoBehaviour
     void Start()
     {
         row_rate = (float) ((_BPM / 60.0) * rpb);
-        Cursor.visible = false;
+        if(!_deviceController.RecordVideo) {
+            Cursor.visible = false;
+        }
     }
 
     private bool hasBeenSetup = false;
     void Setup()
     {
-
         if (_deviceController != null)
         {
             if (!_deviceController.Device.player)
@@ -201,7 +204,12 @@ public class DrawToRenderTexture : MonoBehaviour
         {
             if(_deviceController.RecordVideo) {
                 _audioSource.Pause();
-                ScreenCapture.CaptureScreenshot("Record/Frame_" + frame + ".png");
+                string path = "Record/Frame_" + frame + ".png";
+                if (!System.IO.File.Exists(path))
+                {
+                    ScreenCapture.CaptureScreenshot(path);
+                }
+
                 frame++;
                 _audioSource.time = frame / 60.0f;
                 later = true;
@@ -329,8 +337,6 @@ public class DrawToRenderTexture : MonoBehaviour
             _material.SetFloat("fieldOfView", _deviceController.Device.GetTrack("fieldOfView").GetValue(row));
             _material.SetFloat("prevFieldOfView",
                 _deviceController.Device.GetTrack("fieldOfView").GetValue(prevFrameRow));
-
-
 
             _material.SetVector("mirror", new Vector4(
                 _deviceController.Device.GetTrack("MirrorX").GetValue(row),

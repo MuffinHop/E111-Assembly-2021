@@ -105,6 +105,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ){
 	vec2 uv = fragCoord.xy / iResolution.xy;
 		uv = (2.0 * uv - 1.0) * aspect;
     uv = fragCoord.xy / iResolution.xy;
+    uv.y /= 0.66;
+    uv.y -= 0.25;
     vec3 c = texture(iChannel0, uv).xyz;
     c.r = min(max(c.r,0.0),1.0);
     c.g = min(max(c.g,0.0),1.0);
@@ -128,6 +130,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ){
     c.r = min(max(c.r,0.0),1.0);
     c.g = min(max(c.g,0.0),1.0);
     c.b = min(max(c.b,0.0),1.0);
+    if(uv.y>1.0 || uv.y<0.0)
+    {
+        c=vec3(0.0);
+    }
 	fragColor = vec4(c, 1.0);
 }
          void main()

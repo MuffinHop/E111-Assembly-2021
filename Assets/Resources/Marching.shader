@@ -90,6 +90,8 @@ Shader "Path Marcher" {
          uniform vec3 kleinianPosition;
          uniform float limitSpace;
          uniform float stepMag;
+         uniform sampler2D visyTex;
+         uniform float visy_overlay;
 
          uniform sampler2D  _MainTex;
 
@@ -339,6 +341,7 @@ float getDistance( in vec3 position, out Material material) {
 	#endif
 	
     rockDistance = min(sdBox(position+vec3(groundLevel),vec3(1e8,2.0 + cellTile2(position/32.0)*12.0,1e8)),rockDistance);
+	rockDistance = min( sdBox(position+bunnyPosition.xyz, vec3(1e8,1e8,1.0)), rockDistance);
     vec3 position2 = position - bunnyPosition.xyz;
     position2 *= rotationMatrix(vec3(0.0,1.0,0.0),3.141592/2.0);
     position2.x = -abs(position2.x);
@@ -592,6 +595,7 @@ float getDistance( in vec3 position, out Material material) {
 		//if(mod(fragCoord.x/8.0+fragCoord.x/8.0,2.0) == 0) discard;
 		vec2 aspect = vec2(iResolution.x/iResolution.y, 1.0);
 		vec2 uv = fragCoord.xy / iResolution.xy;
+		vec2 p = uv;
 		uv = (2.0 * uv - 1.0) * aspect;
 		//if(abs(uv.y)>0.75) discard;
 

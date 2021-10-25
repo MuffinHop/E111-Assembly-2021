@@ -52,6 +52,7 @@ MonoBehaviour:
   _skybox: {fileID: 2800000, guid: 9f1337960fb920d429080efd925ac076, type: 3}
   _collection: {fileID: 20000000, guid: 24d1ab51de6aa4346b50aa212a156d16, type: 2}
   _loading: {fileID: 0}
+  _visy: {fileID: 2800000, guid: a2f71bfc6f15fee469e203005455065e, type: 3}
   bounces: 1
 --- !u!1 &3156872192905775871
 GameObject:
@@ -104,4 +105,5 @@ MonoBehaviour:
   _skybox: {fileID: 0}
   _collection: {fileID: 0}
   _loading: {fileID: 0}
+  _visy: {fileID: 0}
   bounces: 0
