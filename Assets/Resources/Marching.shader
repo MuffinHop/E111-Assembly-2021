@@ -51,579 +51,70 @@ Shader "Path Marcher" {
          #endif
  
          #ifdef FRAGMENT
-         uniform vec4 iResolution;
-         uniform sampler2D iChannel0;
-         uniform float iTime;
-         uniform float iTimeDelta;
-         uniform int iFrame;
-         uniform vec4 cameraPosition;
-         uniform vec4 cameraRotation;
-         uniform vec4 prevCameraPosition;
-         uniform vec4 prevCameraRotation;
-         uniform vec4 lightDirection;
-         uniform vec4 lightColor;
-         uniform vec4 rotationPhase;
-         uniform vec4 juliaOffset;
-         uniform vec4 bunnyPosition;
-         uniform vec4 juliaPosition;
-         uniform vec4 scatterLightColor;
-         uniform vec4 backgroundLight;
-         uniform vec4 juliaRotation;
-         uniform vec4 bulbPosition;
-         uniform vec4 bulbColor;
-         uniform vec4 mirror;
-         uniform float bulbSize;
-         uniform float fogDistance;
-         uniform float fogStrength;
-         uniform float bunAnimation;
-         uniform float groundLevel;
-         uniform float motionBlur;
-         uniform float polar;
-         uniform float fieldOfView;
-         uniform float prevFieldOfView;
-         uniform float sunSize;
-         uniform float MAX_DISTANCE;
-         uniform float modulo;
-         uniform float MAX_SAMPLES;
-         uniform float EPSILON;
-         uniform float skyboxPower;
-         uniform vec3 kleinianPosition;
-         uniform float limitSpace;
-         uniform float stepMag;
-         uniform sampler2D visyTex;
-         uniform float visy_overlay;
-
-         uniform sampler2D  _MainTex;
-
+uniform vec4 iResolution;uniform sampler2D iChannel0;uniform float iTime,iTimeDelta;uniform int iFrame;uniform vec4 cameraPosition,cameraRotation,prevCameraPosition,prevCameraRotation,lightDirection,lightColor,rotationPhase,juliaOffset,bunnyPosition,juliaPosition,scatterLightColor,backgroundLight,juliaRotation,bulbPosition,bulbColor,mirror;uniform float bulbSize,fogDistance,fogStrength,bunAnimation,groundLevel,motionBlur,polar,fieldOfView,prevFieldOfView,sunSize,MAX_DISTANCE,modulo,MAX_SAMPLES,EPSILON,skyboxPower;uniform vec3 kleinianPosition;uniform float limitSpace,stepMag;uniform sampler2D visyTex;uniform float visy_overlay;uniform sampler2D _MainTex;
 #define RAY_STEPS 122
-         #ifdef MEGA_SAMPLES
-			#define maxPixelSamples 8
-         #else
-			#define maxPixelSamples 5
-         #endif
-const float PI = 3.14159269;
-const float TWOPI = PI * 2.0;
-float firstHit = 0.;
-struct Ray {
-    vec3 position;
-    vec3 direction;
-    
-    vec4 carriedLight; // how much light the ray allows to pass at this point
-    
-    vec3 light; // how much light has passed through the ray
-};
-struct Material {
-    vec4 carriedLight; // surface color and transparency
-    vec3 emit; // emited light
-    float scatter;
-};
+#ifdef MEGA_SAMPLES
+#define maxPixelSamples 8
+#else
+#define maxPixelSamples 5
+#endif
+const float PI=3.14159,TWOPI=PI*2.;float firstHit=0.;struct Ray{vec3 position;vec3 direction;vec4 carriedLight;vec3 light;};struct Material{vec4 carriedLight;vec3 emit;float scatter;};const uint samples=1103515245U;vec3 hash(uvec3 v){v=(v>>8U^v.yzx)*samples;v=(v>>8U^v.yzx)*samples;v=(v>>8U^v.yzx)*samples;return vec3(v)*(1./float(-1U));}vec2 hash2(float v){return fract(sin(vec2(v,v+1.))*vec2(43758.5,22578.1));}mat3 rotationMatrix(vec3 v,float m){v=normalize(v);float z=sin(m),y=cos(m),i=1.-y;return mat3(i*v.x*v.x+y,i*v.x*v.y-v.z*z,i*v.z*v.x+v.y*z,i*v.x*v.y+v.z*z,i*v.y*v.y+y,i*v.y*v.z-v.x*z,i*v.z*v.x-v.y*z,i*v.y*v.z+v.x*z,i*v.z*v.z+y);}float sdSphere(vec3 v,float y){return length(v)-y;}float sdBox(in vec3 v,in vec3 y){vec3 n=abs(v)-y;return min(max(n.x,max(n.y,n.z)),0.)+length(max(n,0.));}vec2 hash(vec2 v){v=vec2(dot(v,vec2(127.1,311.7)),dot(v,vec2(269.5,183.3)));return-1.+2.*fract(sin(v)*43758.5);}float fOpUnionRound(float v,float y,float m){vec2 z=max(vec2(m-v,m-y),vec2(0));return max(m,min(v,y))-length(z);}float sdCapsule(vec3 v,vec3 z,vec3 m,float y){vec3 n=v-z,x=m-z;float s=clamp(dot(n,x)/dot(x,x),0.,1.);return length(n-x*s)-y;}float getRing(float v){return 1.-min(pow(v,12.),1.);}float sdHexPrism(vec3 v,vec2 n){vec3 m=abs(v.zxy);return max(m.z-n.y,max(m.x*.866+m.y*.5,m.y)-n.x);}float sdCylinder(vec3 v,vec2 y){vec2 n=abs(vec2(length(v.xz),v.y))-y;return min(max(n.x,n.y),0.)+length(max(n,0.));}void pR(inout vec2 v,float m){v=cos(m)*v+sin(m)*vec2(v.y,-v.x);}float length6(vec3 v){v=v*v*v;v=v*v;return pow(v.x+v.y+v.z,1./6.);}float fractal(vec3 v){float m=length(v);v=v.yxz;float z=1.25;const int y=10;float f=0.;vec2 n=vec2(.2+rotationPhase.z,.04+rotationPhase.w),t=vec2(.2+rotationPhase.x,122.8+rotationPhase.y);vec3 s=vec3(-3.+juliaOffset.x,-2.15+juliaOffset.y,-.7+juliaOffset.z);pR(v.xy,.5);for(int r=0;r<y;r++){v=abs(v);v=v*z+s;pR(v.xz,t.x*3.14+cos(m)*n.y);pR(v.yz,t.y*3.14+sin(m)*n.x);f=length6(v);}return f*pow(z,-float(y))-.25;}vec3 coToPol(vec3 v){float m=atan(v.x,v.y),z=length(v.xy);return vec3(m,z,v.z);}float hash12(vec2 v){vec3 n=fract(vec3(v.xyx)*.1031);n+=dot(n,n.yzx+19.19);return fract((n.x+n.y)*n.z);}float voronoii(in vec3 v){v=fract(v)-.5;return dot(v,v);}float voronoiTile(in vec3 v){vec4 n;n.x=voronoii(v-vec3(.81,.62,.53));v.xy=vec2(v.y-v.x,v.y+v.x)*.7071;n.y=voronoii(v-vec3(.39,.2,.11));v.yz=vec2(v.z-v.y,v.z+v.y)*.7071;n.z=voronoii(v-vec3(.62,.24,.06));v.xz=vec2(v.z-v.x,v.z+v.x)*.7071;n.w=voronoii(v-vec3(.2,.82,.64));n.xy=min(n.xz,n.yw);return min(n.x,n.y)*2.66;}float hex(vec2 v){v.x*=1.1547;v.y+=mod(floor(v.x),2.)*.5;v=abs(mod(v,1.)-.5);return abs(max(v.x*1.5+v.y,v.y*2.)-1.);}float voronoiTile2(in vec3 v){vec4 n;n.x=voronoii(v-vec3(.81,.62,.53));v.xy=vec2(v.y-v.x,v.y+v.x)+hex(v.xy*.2);n.y=voronoii(v-vec3(.39,.2,.11));v.yz=vec2(v.z-v.y,v.z+v.y)+hex(v.yz*.2);n.z=voronoii(v-vec3(.62,.24,.06));v.xz=vec2(v.z-v.x,v.z+v.x)+hex(v.xz*.2);n.w=voronoii(v-vec3(.2,.82,.64));n.xy=min(n.xz,n.yw);return min(n.x,n.y)*.5;}float Noise(in float v){float m=floor(v),z=fract(v);z=z*z*(3.-2.*z);return mix(hash2(m).x,hash2(m+1.).x,z);}
+#define CSize vec3(.808,.8,1.137)
+float WeirdSet(vec3 v){float m=1.;for(int f=0;f<5;f++){v=2.*clamp(v,-CSize,CSize)-v;float z=dot(v,v),n=max(1.15/z,1.);v*=n;m*=n;}float z=length(v.xy),n=z*v.z,i=max(z-4.,-n/length(v)-.07+sin(2.+v.x+v.y+23.5*v.z)*.02),f=1.;f=f*f*f*f*.5;float y=dot(sin(v*.013),cos(v.zxy*.191))*f;return(i+y)/abs(m);}vec3 SurfaceColour(vec3 v){float f=0.,z=dot(v,v);for(int n=0;n<5;n++){vec3 m=2.*clamp(v,-CSize,CSize)-v;f+=abs(v.z-m.z);v=m;z=dot(v,v);float r=max(1.15/z,1.);v*=r;}return(.5+.5*sin(f*vec3(.6,-.9,4.9)))*.75+.15;}float fractaling(vec3 v){vec3 z=v,n=v;n.xz=mod(n.xz+1.,2.)-1.;n.y=mod(n.y+1.,2.)-1.;float f=sdBox(n,vec3(1.)),y=1.5+cos(v.z/3.)*.5;for(int r=0;r<3;r++){vec3 m=mod(v*y,2.)-1.9;y*=3.;vec3 i=abs(1.-3.*abs(m));float s=(min(max(i.x,i.y),min(max(i.y,i.z),max(i.z,i.x)))-1.)/y;f=max(s,f);}return f;}float getDistance(in vec3 v,out Material n){float m=sdSphere(v-bulbPosition.xyz,bulbSize);v.z=mix(v.z,mod(v.z,12.)-6.,modulo);v=mix(v,coToPol(v),polar);v.x=mix(v.x,abs(v.x),mirror.x);v.y=mix(v.y,abs(v.y),mirror.y);v.z=mix(v.z,abs(v.z),mirror.z);vec3 f=v-vec3(-12.,0.,0.)-juliaPosition.xyz;float z=1e+08;
+#ifdef JULIA_ON
+f*=rotationMatrix(vec3(1.,0.,0.),juliaRotation.x);f*=rotationMatrix(vec3(0.,1.,0.),juliaRotation.y);f*=rotationMatrix(vec3(0.,0.,1.),juliaRotation.z);z=fractal(f);
+#endif
+z=min(sdBox(v+vec3(groundLevel),vec3(1e+08,2.+voronoiTile2(v/32.)*12.,1e+08)),z);z=min(sdBox(v+bunnyPosition.xyz,vec3(1e+08,1e+08,1.)),z);vec3 i=v-bunnyPosition.xyz;i*=rotationMatrix(vec3(0.,1.,0.),1.5708);i.x=-abs(i.x);i*=.5;
+#if WORM_ON
+float y=WeirdSet((v-kleinianPosition).xzy);
+#endif
 
-// iq's integer hash https://www.shadertoy.com/view/XlXcW4
-const uint samples = 1103515245U;
-vec3 hash( uvec3 x ) {
-    x = ((x>>8U)^x.yzx)*samples;
-    x = ((x>>8U)^x.yzx)*samples;
-    x = ((x>>8U)^x.yzx)*samples;
-    return vec3(x)*(1.0/float(0xffffffffU));
-}
-vec2 hash2( float n ) {
-    return fract(sin(vec2(n,n+1.0))*vec2(43758.5453123,22578.1459123));
-}
-// iq's rotation iirc
-mat3 rotationMatrix(vec3 axis, float angle) {
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    
-    return mat3(oc * axis.x * axis.x + c,
-                oc * axis.x * axis.y - axis.z * s,
-                oc * axis.z * axis.x + axis.y * s,
-                oc * axis.x * axis.y + axis.z * s,  
-                oc * axis.y * axis.y + c,
-                oc * axis.y * axis.z - axis.x * s,
-                oc * axis.z * axis.x - axis.y * s,
-                oc * axis.y * axis.z + axis.x * s,
-                oc * axis.z * axis.z + c);
-}
-float sdSphere( vec3 position, float size ) {
-  return length(position) - size;
-}
-float sdBox( in vec3 p, in vec3 b ) {
-    vec3 d = abs(p) - b;
-    return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
-}
-vec2 hash( vec2 p )
-{
-    p = vec2( dot(p,vec2(127.1,311.7)),
-              dot(p,vec2(269.5,183.3)) );
-	    return -1.0 + 2.0*fract(sin(p)*43758.5453123);
-}
-float fOpUnionRound(float a, float b, float r) {
-    vec2 u = max(vec2(r - a,r - b), vec2(0));
-    return max(r, min (a, b)) - length(u);
-}
-float sdCapsule( vec3 p, vec3 a, vec3 b, float r ) {
-    vec3 pa = p - a, ba = b - a;
-    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-    return length( pa - ba*h ) - r;
-}
-float getRing(float l) {
-    return 1.0-min(pow(l,12.),1.);
-}
-float sdHexPrism( vec3 p, vec2 h) { 
-    vec3 q = abs(p.zxy);
-    return max(q.z-h.y, max((q.x*0.866+q.y*0.5), q.y) - h.x);
-}
-float sdCylinder(vec3 p, vec2 h){
-    vec2 d = abs(vec2(length(p.xz),p.y)) - h;
-    return min(max(d.x,d.y),0.0) + length(max(d,0.0));
-}
-void pR(inout vec2 p, float a) {
-	p = cos(a)*p + sin(a)*vec2(p.y, -p.x);
-}
+#if LIGHTS
+float s=max(fractaling((v-kleinianPosition)/12.),sdBox(v-kleinianPosition,vec3(16.,24.,16.)));
+#endif
+float r=z;r=min(m,r);
+#if WORM_ON
+r=min(r,y);
+#endif
 
-float length6( vec3 p )
-{
-	p = p*p*p; p = p*p;
-	return pow( p.x + p.y + p.z, 1.0/6.0 );
-}
+#if LIGHTS
+r=min(r,s);
+#endif
+if(r==m){n.carriedLight=vec4(1.,1.,1.,1.);n.emit=bulbColor.xyz;n.scatter=1.1+length(bulbColor.xyz);
+#if WORM_ON
+}else if(r==y){float t=voronoiTile2(v*3.),x=pow(t*8.,1.4),a=voronoiTile(v*12.);n.carriedLight.xyz=SurfaceColour(v);n.carriedLight.w=1.;n.emit=vec3(0.);n.scatter=2.8;
+#ifdef SURFACE_HIGH
+r-=t/5.+.02;
+#endif
 
-float fractal(vec3 p)
-{
-   	float len = length(p);
-    p=p.yxz;
+#ifdef SURFACE_ON
+r+=a/22.;
+#endif   
 
-    float scale = 1.25;
-    const int iterations = 10;
-	float l = 0.;
-    
-    vec2 animAmp = vec2(0.2 + rotationPhase.z,0.04 + rotationPhase.w);
-	vec2 phaseLoc = vec2(0.2 + rotationPhase.x,122.8 + rotationPhase.y);
-	
-    
-    vec3 juliaOffset = vec3(-3.+juliaOffset.x,-2.15+juliaOffset.y,-.7+juliaOffset.z);
-     
-    pR(p.xy,.5);
-    
-    for (int i=0; i<iterations; i++) {
-		p = abs(p);
-		p = p * scale + juliaOffset;
-        
-        pR(p.xz,phaseLoc.x*3.14 + cos(len)*animAmp.y);
-		pR(p.yz,phaseLoc.y*3.14 + sin(len)*animAmp.x);		
-        l=length6(p);
-	}
-	return l*pow(scale, -float(iterations))-.25;
-}
-vec3 coToPol(vec3 p) {
-    float a = atan(p.x,p.y);
-    float d=  length(p.xy);
-    return vec3(a,d,p.z);
-}
-float hash12(vec2 p)
-{
-  vec3 p3  = fract(vec3(p.xyx) * .1031);
-  p3 += dot(p3, p3.yzx + 19.19);
-  return fract((p3.x + p3.y) * p3.z);
-}
-float celli(in vec3 p){ p = fract(p)-.5; return dot(p, p); }
-float cellTile(in vec3 p){
-    vec4 d; 
-    d.x = celli(p - vec3(.81, .62, .53));
-    p.xy = vec2(p.y-p.x, p.y + p.x)*.7071;
-    d.y = celli(p - vec3(.39, .2, .11));
-    p.yz = vec2(p.z-p.y, p.z + p.y)*.7071;
-    d.z = celli(p - vec3(.62, .24, .06));
-    p.xz = vec2(p.z-p.x, p.z + p.x)*.7071;
-    d.w = celli(p - vec3(.2, .82, .64));
-    d.xy = min(d.xz, d.yw);
-    return min(d.x, d.y)*2.66; 
-}
-float hex(vec2 p) {
-    p.x *= 0.57735*2.0;
-	p.y += mod(floor(p.x), 2.0)*0.5;
-	p = abs((mod(p, 1.0) - 0.5));
-	return abs(max(p.x*1.5 + p.y, p.y*2.0) - 1.0);
-}
-float cellTile2(in vec3 p){
-    vec4 d; 
-    d.x = celli(p - vec3(.81, .62, .53));
-    p.xy = vec2(p.y-p.x, p.y + p.x)+hex(p.xy*0.2);
-    d.y = celli(p - vec3(.39, .2, .11));
-    p.yz = vec2(p.z-p.y, p.z + p.y)+hex(p.yz*0.2);
-    d.z = celli(p - vec3(.62, .24, .06));
-    p.xz = vec2(p.z-p.x, p.z + p.x)+hex(p.xz*0.2);
-    d.w = celli(p - vec3(.2, .82, .64));
-    d.xy = min(d.xz, d.yw);
-    return min(d.x, d.y)*0.5; 
-}
-         
-float Noise( in float x )
-{
-    float p = floor(x);
-    float f = fract(x);
-    f = f*f*(3.0-2.0*f);
-    return mix(hash2(p).x, hash2(p+1.0).x, f);
-}
+#endif
  
-#define CSize  vec3(.808, .8, 1.137)
-float Map( vec3 p )
-{
-	float scale = 1.0;
+#if LIGHTS
+}else if(s==r){n.carriedLight=vec4(1.,1.,1.,1.);vec3 t=v-kleinianPosition;t/=vec3(2.,1.,4.);n.emit=vec3(1.,.34,.1)*(floor(mod(t.x,2.))*floor(mod(t.y,2.))*floor(mod(t.z,2.)));n.scatter=2.1;
+#endif
+}else{
+#ifdef SURFACE_HIGH
+r+=voronoiTile2(v);
+#endif
 
-	for( int i=0; i < 5;i++ )
-	{
-		p = 2.0 * clamp(p, -CSize, CSize) - p;
-		float r2 = dot(p,p);
-		float k = max((1.15)/r2, 1.);
-		p     *= k;
-		scale *= k;
-	}
-	float l = length(p.xy);
-	float n = l * p.z; 
-	float rxy = max(l - 4.0, -(n) / (length(p))-.07+sin(2.0+p.x+p.y+23.5*p.z)*.02);
-    float x = 1.0;x =x*x*x*x*.5;
-    float h = dot(sin(p*.013),(cos(p.zxy*.191)))*x;
-	return ((rxy+h) / abs(scale));
-    
-}
-vec3 Colour( vec3 p)
-{
-	float col	= 0.0;
-	float r2	= dot(p,p);
-	
-	for( int i=0; i < 5;i++ )
-	{
-		vec3 p1= 2.0 * clamp(p, -CSize, CSize)-p;
-		col += abs(p.z-p1.z);
-		p = p1;
-		r2 = dot(p,p);
-		float k = max((1.15)/r2, 1.0);
-		p *= k;
-	}
-	return (0.5+0.5*sin(col*vec3(.6 ,-.9 ,4.9)))*.75 + .15;
-}
-
-float fractaling( vec3 p) { 
-
-    vec3 w = p;
-    vec3 q = p;
-
-    q.xz = mod( q.xz+1.0, 2.0 ) - 1.0; q.y = mod( q.y+1.0, 2.0 ) - 1.0;
-    
-    float d = sdBox(q,vec3(1.0));
-    float s = 1.5+cos(p.z/3.)*0.5;
-    for( int m=0; m<3; m++ )
-    {
-        vec3 a = mod( p * s, 2.0 )-1.9; s *= 3.0;
-        vec3 r = abs(1.0 - 3.0 * abs(a));
-        float c = (min(max(r.x,r.y),min(max(r.y,r.z),max(r.z,r.x)))-1.0)/s;
-
-        d = max( c, d );
-   }
-   return d;
-}
-float getDistance( in vec3 position, out Material material) {
-	float bulbDistance = sdSphere(position-bulbPosition.xyz,bulbSize);
-	position.z = mix(position.z,mod(position.z, 12.0) - 6.0, modulo);
-	position = mix(position,coToPol(position),polar);
-	position.x = mix(position.x,abs(position.x),mirror.x);
-	position.y = mix(position.y,abs(position.y),mirror.y);
-	position.z = mix(position.z,abs(position.z),mirror.z);
-	vec3 position3 = position-vec3(-12.0,0.0,0.0)-juliaPosition.xyz;
-    float rockDistance = 1e8;
-	#ifdef JULIA_ON
-		position3 *= rotationMatrix(vec3(1.0,0.0,0.0), juliaRotation.x);
-		position3 *= rotationMatrix(vec3(0.0,1.0,0.0), juliaRotation.y);
-		position3 *= rotationMatrix(vec3(0.0,0.0,1.0), juliaRotation.z);
-		rockDistance = fractal(position3);
-	#endif
-	
-    rockDistance = min(sdBox(position+vec3(groundLevel),vec3(1e8,2.0 + cellTile2(position/32.0)*12.0,1e8)),rockDistance);
-	rockDistance = min( sdBox(position+bunnyPosition.xyz, vec3(1e8,1e8,1.0)), rockDistance);
-    vec3 position2 = position - bunnyPosition.xyz;
-    position2 *= rotationMatrix(vec3(0.0,1.0,0.0),3.141592/2.0);
-    position2.x = -abs(position2.x);
-    position2 *= 0.5;
-	#if WORM_ON 
-		float wormDist = Map( (position - kleinianPosition).xzy );
-	#endif
-	#if LIGHTS
-		float lightDist = max(fractaling((position - kleinianPosition)/12.0), sdBox(position - kleinianPosition,vec3(16.0,24.0,16.0)));
-	#endif
-	float finalDistance = rockDistance;
-    finalDistance = min(bulbDistance, finalDistance);
-	#if WORM_ON
-		finalDistance = min(finalDistance, wormDist);
-	#endif
-	#if LIGHTS
-		finalDistance = min(finalDistance, lightDist);
-	#endif
-	    if(finalDistance == bulbDistance) {
-		        material.carriedLight = vec4(1.0,1.0,1.0,1.0);
-		        material.emit = bulbColor.xyz; // emited light
-		        material.scatter = 2.1;
-		#if WORM_ON
-		    } else if(finalDistance == wormDist) {
-		    	float a = cellTile2(position*3.0);
-		    	float b = pow(a*8.0,1.4);
-		    	float c = cellTile(position*12.0);
-			    material.carriedLight.rgb = Colour( position); 
-			    material.carriedLight.a = 1.0;
-		    	material.emit = vec3(0.0); // emited light 
-		    	material.scatter = 2.8;
-	    	#ifdef SURFACE_HIGH
-		        finalDistance -= a/5.0 + 0.02;
-	    	#endif
-	    	#ifdef SURFACE_ON
-		        finalDistance += c/22.0;
-	    	#endif
-		    	#endif
-		#if LIGHTS 
-		    } else if(lightDist == finalDistance) {
-		        material.carriedLight = vec4(1.0,1.0,1.0,1.0);
-		    	vec3 p = position - kleinianPosition;
-		    	p /= vec3(2.0,1.0,4.0);
-		        material.emit = vec3(1.0,0.34,0.1) * ( floor(mod(p.x,2.0)) * floor(mod(p.y,2.0)) * floor(mod(p.z,2.0)) ); // emited light 
-		        material.scatter = 2.1;
-		#endif
-	    }  else {
-	    	#ifdef SURFACE_HIGH
-		        finalDistance += cellTile2(position);
-	    	#endif
-	    	#ifdef SURFACE_ON
-		        finalDistance += cellTile(position*7.0)/5.0;
-	    	#endif
-	        material.carriedLight.rgb = vec3(1.0);
-	        material.carriedLight.a = 1.0;
-	        material.emit = vec3(0.0); // emited light
-	        material.scatter = 1.8;
-	    }
-		return finalDistance;
-	}
-	vec3 getLightDirection() {
-	    return lightDirection.xyz;
-	}
-	vec3 getLightColor() {
-	    return lightColor.xyz;
-	}
-	vec3 cameraRotationOperation(vec3 dir, float signer) {
-	    if(signer > 0.) { 
-	        dir *= rotationMatrix(vec3(1.0,0.0,0.0), cameraRotation.x );
-	        dir *= rotationMatrix(vec3(0.0,1.0,0.0), cameraRotation.y );
-	        dir *= rotationMatrix(vec3(0.0,0.0,1.0), cameraRotation.z );
-	    } else {
-	        dir *= rotationMatrix(vec3(0.0,0.0,1.0), -cameraRotation.z);
-	        dir *= rotationMatrix(vec3(0.0,1.0,0.0), -cameraRotation.y);
-	        dir *= rotationMatrix(vec3(1.0,0.0,0.0), -cameraRotation.x);
-	    }
-	    return dir;
-	}
-	vec3 prevCameraRotationOperation(vec3 dir, float signer) {
-	    if(signer > 0.) { 
-	        dir *= rotationMatrix(vec3(1.0,0.0,0.0), prevCameraRotation.x );
-	        dir *= rotationMatrix(vec3(0.0,1.0,0.0), prevCameraRotation.y );
-	        dir *= rotationMatrix(vec3(0.0,0.0,1.0), prevCameraRotation.z );
-	    } else {
-	        dir *= rotationMatrix(vec3(0.0,0.0,1.0), -prevCameraRotation.z);
-	        dir *= rotationMatrix(vec3(0.0,1.0,0.0), -prevCameraRotation.y);
-	        dir *= rotationMatrix(vec3(1.0,0.0,0.0), -prevCameraRotation.x);
-	    }
-	    return dir;
-	}
-	float shade(inout Ray ray, vec3 dir, float d, Material material)
-	{
-	    ray.carriedLight *= material.carriedLight;
-	    ray.light += material.emit * ray.carriedLight.rgb;
-	    return material.scatter;
-	}
-  //hemispherical sampling
-	void sampleSkybox(inout vec3 dir, float samples, float count, float diffuse) {
-	    vec3  uu  = normalize( cross( dir, vec3(0.01,1.0,1.0) ) );
-	    vec2  aa = hash2( count );
-	    float ra = sqrt(aa.y);
-	    float ry = ra*sin(6.2831*aa.x);
-	    float rx = ra*cos(6.2831*aa.x);
-	    float rz = sqrt( sqrt(samples)*(1.0-aa.y) );
-	    dir = normalize(mix(dir, vec3( rx*uu + ry*normalize( cross( uu, dir ) ) + rz*dir ), diffuse));
-	}
-	vec3 shadeBackground(vec3 dir) {
-	    vec3 lightDirection = getLightDirection();
-	    lightDirection = normalize( lightDirection);
-	    vec3 lightColor = getLightColor();
-	    
-	    float bacsamplesgroundDiff = dot( dir, vec3( 0.0, 1.0, 0.0));
-	    float lightPower = dot( dir, lightDirection);
-	    vec3 bacsamplesgroundColor =  lightColor * pow( max( lightPower * (0.1 + sunSize), 0.0), 4.0);
-		bacsamplesgroundColor += 0.01 * backgroundLight.xyz * pow( max( 0.7-lightPower, 0.0), 2.0); 
-	    bacsamplesgroundColor += 0.1 * scatterLightColor.xyz * pow( max( 0.2+lightPower, 0.0), 2.0);
-	    return max(vec3(0.0), bacsamplesgroundColor);
-	}
-
-	vec3 normal(Ray ray, float d) {
-	    Material material;
-	    float dx = getDistance(vec3(EPSILON, 0.0, 0.0) + ray.position, material) - d;
-	    float dy = getDistance(vec3(0.0, EPSILON, 0.0) + ray.position, material) - d;
-	    float dz = getDistance(vec3(0.0, 0.0, EPSILON) + ray.position, material) - d;
-	    return normalize(vec3(dx, dy, dz));
-	}
-	Ray initialize(vec2 uv, vec2 suffle, vec3 rand) {
-	    Ray r;
-	    r.light = vec3(0.0);
-	    r.carriedLight = vec4(1.0);
-	    r.direction = normalize(vec3(uv+suffle, 1.0));
-		r.direction.z /= tan(radians(fieldOfView));
-	    r.position = cameraPosition.xyz + r.direction * (-0.5 + rand.z) * 0.001;
-	    r.direction = cameraRotationOperation(r.direction, 1.0);
-	    return r;
-	} 
-	vec4 smpl(vec2 uv, vec2 uvD, out vec3 position, int sampleCount, Ray ray, out float temporalSampling) {
-	    int hit = 0;
-	    float depth = 0.0;
-	    float maxDiffuseSum = 0.0;
-	    vec4 color = vec4( 0.0);
-	    float minDistance = 10e8;
-	    float totalDistance = 0.0;
-	    float count = 0.0;
-	    float diffuseSum = 0.0;
-	    float samples = 1.0;
-	    vec3 total = vec3(0.0);
-	    vec3 startPosition = ray.position;
-	    vec3 startDirection = ray.direction;
-	    for( int i = 0; i < RAY_STEPS; i++) {
-	        Material material;
-	        float dist = getDistance( ray.position, material);
-	        minDistance = min( minDistance, dist);
-	    	#if FAST_MARCH
-				ray.position += dist * ray.direction * 0.5 * (1.0 + stepMag * totalDistance / 100.0);
-	    	#else
-				ray.position += dist * ray.direction * 0.5 * (1.0 + stepMag * totalDistance * totalDistance / 100.0);
-	    	#endif
-	        totalDistance += dist;
-	        if(dist < EPSILON) { 
-	          { 
-	                if(firstHit == 0.) {
-	                    position = ray.position;
-	                    temporalSampling = material.carriedLight.a;
-	                }
-	                //ray.position -= dist * ray.direction;
-	                vec3 norm = normal( ray, dist);
-	                //ray.position -= 2.0 * dist * ray.direction;
-	                firstHit ++;
-	                float diffuse = shade( ray, norm, dist, material);
-	                diffuseSum += diffuse;
-
-	                sampleSkybox(
-	                    ray.direction, 
-	                    samples, 
-	                    samples + 12.12312 * dot( norm, ray.direction) + iTime + float(sampleCount), 
-	                    diffuse * 0.5);
-
-	                ray.position += 1.0 * EPSILON * norm;
-	                ray.direction = reflect(ray.direction, norm);
-	                ray.position += 1.0 * EPSILON * ray.direction;
-	                
-	                count ++;
-	                hit = 1;
-	          		if( count > MAX_SAMPLES) {
-	                    break;
-	                }
-	            }
-	        } else if (distance(startPosition,ray.position) > MAX_DISTANCE / min(1.0 + float(sampleCount),3.0) || length(uv) > limitSpace) {
-	            vec3 bg = shadeBackground( ray.direction) * (12.0 * min(1.0 + count * 2.0, 4.0) );
-	            if (minDistance > EPSILON*1.5) {
-	                ray.light = bg;
-	                break;
-	            }
-	            total += ray.light + ray.carriedLight.rgb * bg;
-	            samples++;        
-	            maxDiffuseSum = max( diffuseSum, maxDiffuseSum);
-	            diffuseSum = 0.0;
-	            break;
-	        }
-	    }
-	    total += ray.light;
-	    color += vec4( total / samples, 1.0);
-        color.rgb = mix( color.rgb, shadeBackground( startDirection) * 12., max( min( (distance(startPosition,position) - 100.0 + fogDistance ) / fogStrength,1.0),0.0) );
-
-
-        //float luminance = color.r * 0.299 + color.g * 0.587 + color.b * 0.114;
-        //color.rgb = vec3(luminance,luminance,luminance);
-	    return color;
-	}
-	vec4 trace(vec2 uv, vec2 uvD, out vec3 position) {
-	    vec4 color = vec4(0.0);
-	    float temporalSampling = 0.0;
-		vec2 uv2 = gl_FragCoord.xy / iResolution.xy;
-	    float samples = texture(iChannel0, uv2).a;
-	    for( int sampleCount = 0; sampleCount < maxPixelSamples ; sampleCount++) {
-	        uvec3 seed = uvec3(gl_FragCoord.xy, iFrame*maxPixelSamples + sampleCount);
-	        vec3 rand = hash(seed);
-	        vec2 suffle = rand.xy - 0.5;
-	        suffle /= iResolution.xy;
-	        Ray ray = initialize(uv, suffle, rand);
-	    	ray.direction *= 1.0 + rand.z / 8.0;
-	        color += smpl( uv,  uvD, position, sampleCount, ray, temporalSampling);
-	        /*if(samples == 0.0 && sampleCount > 0) {
-	        	break;
-	        }*/
-	    }
-	    return vec4( color.rgb / color.a, temporalSampling);
-	}
-	vec4 reproject( vec3 worldPos) { 
-	    vec3 dir = normalize(worldPos - prevCameraPosition.xyz) / 1.5;
-	    dir = prevCameraRotationOperation(dir, -1.0);
-		dir.z *= tan(radians(prevFieldOfView));
-	    dir /= dir.z ;
-	    
-	    vec2 aspect = vec2(iResolution.x/iResolution.y, 1.0);
-	    vec2 uv = dir.xy;
-	    uv /= aspect;
-	    uv += vec2(1.0);
-	    uv /= 2.0;
-	    if(uv.x>0.0 && uv.x<1.0 && uv.y>0.0 && uv.y<1.0) {
-	        vec4 tex = texture(iChannel0, uv);
-	        tex.a = mod(tex.a, 1.0);
-	        return tex;
-	    }
-	    return vec4(0.0);
-	}
-
-	void mainImage( out vec4 fragColor, in vec2 fragCoord )
-	{
-		//if(mod(fragCoord.x/8.0+fragCoord.x/8.0,2.0) == 0) discard;
-		vec2 aspect = vec2(iResolution.x/iResolution.y, 1.0);
-		vec2 uv = fragCoord.xy / iResolution.xy;
-		vec2 p = uv;
-		uv = (2.0 * uv - 1.0) * aspect;
-		//if(abs(uv.y)>0.75) discard;
-
-            vec2 uvD = ((2.0 * ((fragCoord.xy+vec2(1.0, 1.0)) / iResolution.xy) - 1.0) * aspect) - uv;
-            vec3 position = vec3(0.0);
-            vec4 light = trace(uv, uvD, position);
-            fragColor = vec4( light.rgb, 1.0/127.0 );
-
-            fragColor.rgb = pow( fragColor.rgb, vec3(1.0/2.1) );
-			if(length(position)>0.){
-                vec4 reprojectionColor = reproject( position) * (1.0 - motionBlur) * light.a;
-                fragColor += vec4(reprojectionColor.rgb * (1.0 + motionBlur), 1.0/127.0) * (reprojectionColor.a * 127.0);
-				fragColor.rgb /= fragColor.a * 127.0;
-            } else {
-				#if SKYBOX_ON
-					fragColor.rgb += texture2D( _MainTex, (uv/vec2(4.5,2.0))-vec2(0.5)).rgb * skyboxPower;
-				#endif
-	            fragColor.a = 0.0;
-            }
-            fragColor.rgb = min(max(fragColor.rgb,vec3(0.0)),vec3(1.0));
-    }
-         void main()
-         { 
-			vec4 fragColor;
-			vec2 fragCoord = gl_FragCoord.xy;
-			mainImage( fragColor, fragCoord );
-            gl_FragColor = fragColor;
-         }
+#ifdef SURFACE_ON
+r+=voronoiTile(v*7.)/5.;
+#endif
+n.carriedLight.xyz=vec3(1.);n.carriedLight.w=1.;n.emit=vec3(0.);n.scatter=1.8;}return r;}vec3 getLightDirection(){return lightDirection.xyz;}vec3 getLightColor(){return lightColor.xyz;}vec3 cameraRotationOperation(vec3 v,float m){if(m>0.){v*=rotationMatrix(vec3(1.,0.,0.),cameraRotation.x);v*=rotationMatrix(vec3(0.,1.,0.),cameraRotation.y);v*=rotationMatrix(vec3(0.,0.,1.),cameraRotation.z);}else{v*=rotationMatrix(vec3(0.,0.,1.),-cameraRotation.z);v*=rotationMatrix(vec3(0.,1.,0.),-cameraRotation.y);v*=rotationMatrix(vec3(1.,0.,0.),-cameraRotation.x);}return v;}vec3 prevCameraRotationOperation(vec3 v,float m){if(m>0.){v*=rotationMatrix(vec3(1.,0.,0.),prevCameraRotation.x);v*=rotationMatrix(vec3(0.,1.,0.),prevCameraRotation.y);v*=rotationMatrix(vec3(0.,0.,1.),prevCameraRotation.z);}else{v*=rotationMatrix(vec3(0.,0.,1.),-prevCameraRotation.z);v*=rotationMatrix(vec3(0.,1.,0.),-prevCameraRotation.y);v*=rotationMatrix(vec3(1.,0.,0.),-prevCameraRotation.x);}return v;}float shade(inout Ray v,vec3 z,float n,Material m){v.carriedLight*=m.carriedLight;v.light+=m.emit*v.carriedLight.xyz;return m.scatter;}void sampleSkybox(inout vec3 v,float m,float z,float y){vec3 n=normalize(cross(v,vec3(.01,1.,1.)));vec2 i=hash2(z);float f=sqrt(i.y),t=f*sin(6.2831*i.x),r=f*cos(6.2831*i.x),x=sqrt(sqrt(m)*(1.-i.y));v=normalize(mix(v,vec3(r*n+t*normalize(cross(n,v))+x*v),y));}vec3 shadeBackground(vec3 v){vec3 m=getLightDirection();m=normalize(m);vec3 z=getLightColor();float f=dot(v,vec3(0.,1.,0.)),n=dot(v,m);vec3 y=z*pow(max(n*(.1+sunSize),0.),4.);y+=.01*backgroundLight.xyz*pow(max(.7-n,0.),2.);y+=.1*scatterLightColor.xyz*pow(max(.2+n,0.),2.);return max(vec3(0.),y);}vec3 normal(Ray v,float y){Material m;float z=getDistance(vec3(EPSILON,0.,0.)+v.position,m)-y,n=getDistance(vec3(0.,EPSILON,0.)+v.position,m)-y,x=getDistance(vec3(0.,0.,EPSILON)+v.position,m)-y;return normalize(vec3(z,n,x));}Ray initialize(vec2 v,vec2 n,vec3 m){Ray f;f.light=vec3(0.);f.carriedLight=vec4(1.);f.direction=normalize(vec3(v+n,1.));f.direction.z/=tan(radians(fieldOfView));f.position=cameraPosition.xyz+f.direction*(-.5+m.z)*.001;f.direction=cameraRotationOperation(f.direction,1.);return f;}vec4 smpl(vec2 v,vec2 n,out vec3 z,int m,Ray f,out float y){int r=0;float s=0.,x=0.;vec4 i=vec4(0.);float t=1e+09,p=0.,c=0.,e=0.,u=1.;vec3 l=vec3(0.),w=f.position,b=f.direction;for(int S=0;S<RAY_STEPS;S++){Material a;float g=getDistance(f.position,a);t=min(t,g);
+#if FAST_MARCH
+f.position+=g*f.direction*.5*(1.+stepMag*p/100.);
+#else
+f.position+=g*f.direction*.5*(1.+stepMag*p*p/100.);
+#endif
+p+=g;if(g<EPSILON){{if(firstHit==0.){z=f.position;y=a.carriedLight.w;}vec3 h=normal(f,g);firstHit++;float d=shade(f,h,g,a);e+=d;sampleSkybox(f.direction,u,u+12.1231*dot(h,f.direction)+iTime+float(m),d*.5);f.position+=EPSILON*h;f.direction=reflect(f.direction,h);f.position+=EPSILON*f.direction;c++;r=1;if(c>MAX_SAMPLES){break;}}}else if(distance(w,f.position)>MAX_DISTANCE/min(1.+float(m),3.)||length(v)>limitSpace){vec3 d=shadeBackground(f.direction)*(12.*min(1.+c*2.,4.));if(t>EPSILON*1.5){f.light=d;break;}l+=f.light+f.carriedLight.xyz*d;u++;x=max(e,x);e=0.;break;}}l+=f.light;i+=vec4(l/u,1.);i.xyz=mix(i.xyz,shadeBackground(b)*12.,max(min((distance(w,z)-100.+fogDistance)/fogStrength,1.),0.));return i;}vec4 trace(vec2 v,vec2 n,out vec3 m){vec4 f=vec4(0.);float z=0.;vec2 y=gl_FragCoord.xy/iResolution.xy;float s=texture(iChannel0,y).w;for(int r=0;r<maxPixelSamples;r++){uvec3 i=uvec3(gl_FragCoord.xy,iFrame*maxPixelSamples+r);vec3 t=hash(i);vec2 x=t.xy-.5;x/=iResolution.xy;Ray e=initialize(v,x,t);e.direction*=1.+t.z/8.;f+=smpl(v,n,m,r,e,z);}return vec4(f.xyz/f.w,z);}vec4 reproject(vec3 v){vec3 n=normalize(v-prevCameraPosition.xyz)/1.5;n=prevCameraRotationOperation(n,-1.);n.z*=tan(radians(prevFieldOfView));n/=n.z;vec2 m=vec2(iResolution.x/iResolution.y,1.),f=n.xy;f/=m;f+=vec2(1.);f/=2.;if(f.x>0.&&f.x<1.&&f.y>0.&&f.y<1.){vec4 r=texture(iChannel0,f);r.w=mod(r.w,1.);return r;}return vec4(0.);}void mainImage(out vec4 v,in vec2 m){vec2 z=vec2(iResolution.x/iResolution.y,1.),n=m.xy/iResolution.xy,f=n;n=(2.*n-1.)*z;vec2 y=(2.*((m.xy+vec2(1.,1.))/iResolution.xy)-1.)*z-n;vec3 i=vec3(0.);vec4 t=trace(n,y,i);v=vec4(t.xyz,1./127.);v.xyz=pow(v.xyz,vec3(1./2.1));if(length(i)>0.){vec4 r=reproject(i)*(1.-motionBlur)*t.w;v+=vec4(r.xyz*(1.+motionBlur),1./127.)*(r.w*127.);v.xyz/=v.w*127.;}else{
+#if SKYBOX_ON
+v.xyz+=texture2D(_MainTex,n/vec2(4.5,2.)-vec2(.5)).xyz*skyboxPower;
+#endif
+v.w=0.;}v.xyz=min(max(v.xyz,vec3(0.)),vec3(1.));}void main(){vec4 v;vec2 m=gl_FragCoord.xy;mainImage(v,m);gl_FragColor=v;}
           
          #endif
 
